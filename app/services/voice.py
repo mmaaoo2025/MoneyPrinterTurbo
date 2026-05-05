@@ -2,6 +2,7 @@ import asyncio
 import inspect
 import math
 import os
+import html
 import re
 from datetime import datetime
 from typing import Union
@@ -55,6 +56,14 @@ def get_siliconflow_voices() -> list[str]:
     return [
         f"siliconflow:{model}:{voice}-{gender}"
         for model, voice, gender in voices_with_gender
+    ]
+
+
+def get_personal_voice_voices() -> list[str]:
+    return [
+        "personal-voice:zh-Mao Cloned Voice (Chinese)-Female",
+        "personal-voice:en-Mao Cloned Voice (English)-Female",
+        "personal-voice:bilingual-Mao Cloned Voice (Bilingual)-Female",
     ]
 
 
@@ -1131,6 +1140,10 @@ def is_gemini_voice(voice_name: str):
     return voice_name.startswith("gemini:")
 
 
+def is_personal_voice(voice_name: str):
+    return voice_name.startswith("personal-voice:")
+
+
 def tts(
     text: str,
     voice_name: str,
@@ -1169,6 +1182,8 @@ def tts(
         else:
             logger.error(f"Invalid gemini voice name format: {voice_name}")
             return None
+    elif is_personal_voice(voice_name):
+        return personal_voice_tts(text, voice_name, voice_rate, voice_file)
     return azure_tts_v1(text, voice_name, voice_rate, voice_file)
 
 
@@ -1515,6 +1530,124 @@ def siliconflow_tts(
         except Exception as e:
             logger.error(f"siliconflow tts failed: {str(e)}")
 
+    return None
+
+
+def _load_personal_voice_env() -> dict[str, str]:
+    env_file = config.personal_voice.get("env_file", "").strip()
+    values = {}
+    if not env_file:
+        logger.error("personal_voice.env_file is not set")
+        return values
+    if not os.path.exists(env_file):
+        logger.error(f"personal voice env file not found: {env_file}")
+        return values
+
+    with open(env_file, "r", encoding="utf-8") as file:
+        for line in file:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            values[key.strip()] = value.strip().strip('"').strip("'")
+    return values
+
+
+def _personal_voice_lang(voice_name: str) -> str:
+    parts = voice_name.split(":", 1)
+    if len(parts) < 2:
+        return "zh"
+    return parts[1].split("-", 1)[0].strip().lower() or "zh"
+
+
+def personal_voice_tts(
+    text: str,
+    voice_name: str,
+    voice_rate: float,
+    voice_file: str,
+) -> Union[SubMaker, None]:
+    text = text.strip()
+    if not text:
+        logger.error("personal voice text is empty")
+        return None
+
+    try:
+        import azure.cognitiveservices.speech as speechsdk
+    except ImportError as e:
+        logger.error(f"Azure Speech SDK is not installed: {str(e)}")
+        return None
+
+    env = _load_personal_voice_env()
+    speech_key = env.get("AZURE_SPEECH_KEY") or config.azure.get("speech_key", "")
+    speech_region = env.get("AZURE_SPEECH_REGION") or config.azure.get("speech_region", "")
+    lang = _personal_voice_lang(voice_name)
+
+    if lang == "zh":
+        speaker_profile_id = env.get("AZURE_SPEAKER_PROFILE_ID_ZH") or env.get("AZURE_SPEAKER_PROFILE_ID")
+    elif lang == "en":
+        speaker_profile_id = env.get("AZURE_SPEAKER_PROFILE_ID_EN") or env.get("AZURE_SPEAKER_PROFILE_ID")
+    else:
+        speaker_profile_id = env.get("AZURE_SPEAKER_PROFILE_ID_ZH") or env.get("AZURE_SPEAKER_PROFILE_ID")
+
+    if not speech_key or not speech_region or not speaker_profile_id:
+        logger.error("personal voice speech key, region, or speaker profile id is missing")
+        return None
+
+    voice_model = config.personal_voice.get("voice_model", "DragonLatestNeural")
+    style = config.personal_voice.get("style", "narration").strip()
+    rate_str = convert_rate_to_percent(voice_rate)
+
+    escaped_text = html.escape(text)
+    if voice_rate != 1.0:
+        escaped_text = f'<prosody rate="{rate_str}">{escaped_text}</prosody>'
+    if style:
+        escaped_text = f'<mstts:express-as style="{style}">{escaped_text}</mstts:express-as>'
+    if lang in ["zh", "bilingual"]:
+        escaped_text = f"<lang xml:lang='zh-CN'>{escaped_text}</lang>"
+
+    ssml = f"""<speak version='1.0'
+       xmlns='http://www.w3.org/2001/10/synthesis'
+       xmlns:mstts='http://www.w3.org/2001/mstts'
+       xml:lang='en-US'>
+  <voice name='{voice_model}'>
+    <mstts:ttsembedding speakerProfileId='{speaker_profile_id}'>
+      {escaped_text}
+    </mstts:ttsembedding>
+  </voice>
+</speak>"""
+
+    for i in range(3):
+        try:
+            logger.info(f"start personal voice tts, lang: {lang}, try: {i + 1}")
+            ensure_file_path_exists(voice_file)
+            speech_config = speechsdk.SpeechConfig(subscription=speech_key, region=speech_region)
+            speech_config.set_speech_synthesis_output_format(
+                speechsdk.SpeechSynthesisOutputFormat.Audio24Khz160KBitRateMonoMp3
+            )
+            audio_config = speechsdk.audio.AudioOutputConfig(filename=voice_file)
+            synthesizer = speechsdk.SpeechSynthesizer(
+                speech_config=speech_config,
+                audio_config=audio_config,
+            )
+            result = synthesizer.speak_ssml_async(ssml).get()
+
+            if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
+                audio_duration = _get_audio_duration_from_mp3(voice_file)
+                sub_maker = populate_legacy_submaker_with_full_text(
+                    sub_maker=ensure_legacy_submaker_fields(SubMaker()),
+                    text=text,
+                    audio_duration_seconds=audio_duration,
+                )
+                logger.success(f"personal voice tts succeeded: {voice_file}")
+                return sub_maker
+
+            if result.reason == speechsdk.ResultReason.Canceled:
+                details = result.cancellation_details
+                logger.error(f"personal voice tts canceled: {details.reason}")
+                if details.reason == speechsdk.CancellationReason.Error:
+                    logger.error(f"personal voice tts error: {details.error_details}")
+        except Exception as e:
+            logger.error(f"personal voice tts failed: {str(e)}")
     return None
 
 

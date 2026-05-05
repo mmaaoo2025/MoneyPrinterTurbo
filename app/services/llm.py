@@ -329,7 +329,7 @@ def _generate_response(prompt: str) -> str:
                     azure_endpoint=base_url,
                 )
 
-            if llm_provider == "modelscope":
+            elif llm_provider == "modelscope":
                 content = ''
                 client = OpenAI(
                     api_key=api_key,

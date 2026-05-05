@@ -517,12 +517,37 @@ with left_panel:
         )
         params.video_language = video_languages[selected_index][1]
 
+        script_length_options = [
+            (tr("Short"), 1),
+            (tr("Medium"), 3),
+            (tr("Long"), 5),
+            (tr("Very Long"), 8),
+            (tr("Extra Long"), 10),
+        ]
+        saved_paragraph_number = int(config.ui.get("paragraph_number", 1))
+        saved_paragraph_index = 0
+        for i, (_, paragraph_number) in enumerate(script_length_options):
+            if paragraph_number == saved_paragraph_number:
+                saved_paragraph_index = i
+                break
+
+        selected_length_index = st.selectbox(
+            tr("Script Length"),
+            options=range(len(script_length_options)),
+            format_func=lambda x: script_length_options[x][0],
+            index=saved_paragraph_index,
+        )
+        params.paragraph_number = script_length_options[selected_length_index][1]
+        config.ui["paragraph_number"] = params.paragraph_number
+
         if st.button(
             tr("Generate Video Script and Keywords"), key="auto_generate_script"
         ):
             with st.spinner(tr("Generating Video Script and Keywords")):
                 script = llm.generate_script(
-                    video_subject=params.video_subject, language=params.video_language
+                    video_subject=params.video_subject,
+                    language=params.video_language,
+                    paragraph_number=params.paragraph_number,
                 )
                 terms = llm.generate_terms(params.video_subject, script)
                 if "Error: " in script:
@@ -653,6 +678,7 @@ with middle_panel:
         tts_servers = [
             ("azure-tts-v1", "Azure TTS V1"),
             ("azure-tts-v2", "Azure TTS V2"),
+            ("personal-voice", "Mao Cloned Voice"),
             ("siliconflow", "SiliconFlow TTS"),
             ("gemini-tts", "Google Gemini TTS"),
         ]
@@ -684,6 +710,8 @@ with middle_panel:
         elif selected_tts_server == "gemini-tts":
             # 获取Gemini TTS的声音列表
             filtered_voices = voice.get_gemini_voices()
+        elif selected_tts_server == "personal-voice":
+            filtered_voices = voice.get_personal_voice_voices()
         else:
             # 获取Azure的声音列表
             all_voices = voice.get_all_azure_voices(filter_locals=None)
