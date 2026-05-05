@@ -1,3 +1,12 @@
+## 变更历史 📝
+
+### 2026-05-05
+
+- 新增 `Mao Cloned Voice` TTS 选项，可通过 Azure Personal Voice 使用个人克隆声音生成视频旁白
+- 新增 `Script Length` 文案长度选择，支持生成更长脚本，从而生成约 1 到 4 分钟的长视频
+- 修复 Azure OpenAI 配置下可能被 ModelScope 分支覆盖客户端而导致 `404 Resource not found` 的问题
+- 优化克隆声音字幕时间轴：不再依赖不稳定的逐词边界事件，改为按实际音频时长和脚本文案生成连续字幕
+
 <div align="center">
 <h1 align="center">MoneyPrinterTurbo 💸</h1>
 
@@ -42,15 +51,6 @@
 - [x] 视频素材来源 **高清**，而且 **无版权**，也可以使用自己的 **本地素材**
 - [x] 支持 **OpenAI**、**Moonshot**、**Azure**、**gpt4free**、**one-api**、**通义千问**、**Google Gemini**、**Ollama**、**DeepSeek**、**MiniMax**、 **文心一言**, **Pollinations**、**ModelScope** 等多种模型接入
     - 中国用户建议使用 **DeepSeek** 或 **Moonshot** 作为大模型提供商（国内可直接访问，不需要VPN。注册就送额度，基本够用）
-
-## 变更历史 📝
-
-### 2026-05-05
-
-- 新增 `Mao Cloned Voice` TTS 选项，可通过 Azure Personal Voice 使用个人克隆声音生成视频旁白
-- 新增 `Script Length` 文案长度选择，支持生成更长脚本，从而生成约 1 到 4 分钟的长视频
-- 修复 Azure OpenAI 配置下可能被 ModelScope 分支覆盖客户端而导致 `404 Resource not found` 的问题
-- 优化克隆声音字幕时间轴：不再依赖不稳定的逐词边界事件，改为按实际音频时长和脚本文案生成连续字幕
 
 ## 视频演示 📺
 
