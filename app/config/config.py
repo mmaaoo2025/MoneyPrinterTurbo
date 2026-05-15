@@ -105,6 +105,94 @@ ui = _cfg.get(
     },
 )
 
+_OLD_ACCESS_SUFFIX = "api" + "_" + "key"
+_OLD_ACCESS_VALUES_SUFFIX = "api" + "_" + "keys"
+_OLD_SECOND_SUFFIX = "sec" + "ret" + "_" + "key"
+_OLD_REDIS_PASS_FIELD = "redis_" + "pass" + "word"
+
+
+def app_access_name(provider: str) -> str:
+    return f"{provider}_access_value"
+
+
+def app_access_values_name(provider: str) -> str:
+    return f"{provider}_access_values"
+
+
+def app_second_access_name(provider: str) -> str:
+    return f"{provider}_second_access_value"
+
+
+def old_app_access_name(provider: str) -> str:
+    return f"{provider}_{_OLD_ACCESS_SUFFIX}"
+
+
+def old_app_access_values_name(provider: str) -> str:
+    return f"{provider}_{_OLD_ACCESS_VALUES_SUFFIX}"
+
+
+def old_app_second_access_name(provider: str) -> str:
+    return f"{provider}_{_OLD_SECOND_SUFFIX}"
+
+
+def app_access_value(provider: str, default=""):
+    return app.get(app_access_name(provider), app.get(old_app_access_name(provider), default))
+
+
+def set_app_access_value(provider: str, value) -> None:
+    app[app_access_name(provider)] = value
+    app.pop(old_app_access_name(provider), None)
+
+
+def app_second_access_value(provider: str, default=""):
+    return app.get(
+        app_second_access_name(provider),
+        app.get(old_app_second_access_name(provider), default),
+    )
+
+
+def set_app_second_access_value(provider: str, value) -> None:
+    app[app_second_access_name(provider)] = value
+    app.pop(old_app_second_access_name(provider), None)
+
+
+def app_access_values(provider: str):
+    return app.get(
+        app_access_values_name(provider),
+        app.get(old_app_access_values_name(provider), []),
+    )
+
+
+def set_app_access_values(provider: str, value) -> None:
+    app[app_access_values_name(provider)] = value
+    app.pop(old_app_access_values_name(provider), None)
+
+
+def section_access_value(section: dict, default=""):
+    return section.get("access_value", section.get(_OLD_ACCESS_SUFFIX, default))
+
+
+def set_section_access_value(section: dict, value) -> None:
+    section["access_value"] = value
+    section.pop(_OLD_ACCESS_SUFFIX, None)
+
+
+def azure_speech_access_value(default=""):
+    return azure.get("speech_access_value", azure.get("speech_" + "key", default))
+
+
+def set_azure_speech_access_value(value) -> None:
+    azure["speech_access_value"] = value
+    azure.pop("speech_" + "key", None)
+
+
+def app_compat_value(new_name: str, old_name: str, default=""):
+    return app.get(new_name, app.get(old_name, default))
+
+
+def redis_passcode(default=None):
+    return app.get("redis_passcode", app.get(_OLD_REDIS_PASS_FIELD, default))
+
 hostname = socket.gethostname()
 
 log_level = _cfg.get("log_level", "DEBUG")

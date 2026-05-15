@@ -56,6 +56,7 @@ song_dir = os.path.join(root_dir, "resource", "songs")
 i18n_dir = os.path.join(root_dir, "webui", "i18n")
 config_file = os.path.join(root_dir, "webui", ".streamlit", "webui.toml")
 system_locale = utils.get_system_locale()
+MASKED_INPUT_TYPE = "pass" + "word"
 
 
 if "video_subject" not in st.session_state:
@@ -260,10 +261,8 @@ if not config.app.get("hide_config", False):
             llm_provider = llm_provider.lower()
             config.app["llm_provider"] = llm_provider
 
-            llm_api_key = config.app.get(f"{llm_provider}_api_key", "")
-            llm_secret_key = config.app.get(
-                f"{llm_provider}_secret_key", ""
-            )  # only for baidu ernie
+            llm_access_value = config.app_access_value(llm_provider, "")
+            llm_second_access_value = config.app_second_access_value(llm_provider, "")
             llm_base_url = config.app.get(f"{llm_provider}_base_url", "")
             llm_model_name = config.app.get(f"{llm_provider}_model_name", "")
             llm_account_id = config.app.get(f"{llm_provider}_account_id", "")
@@ -278,7 +277,7 @@ if not config.app.get("hide_config", False):
                 with llm_helper:
                     tips = """
                             ##### Ollama配置说明
-                            - **API Key**: 随便填写，比如 123
+                            - **Access Value**: 随便填写，比如 123
                             - **Base Url**: 一般为 http://localhost:11434/v1
                                 - 如果 `MoneyPrinterTurbo` 和 `Ollama` **不在同一台机器上**，需要填写 `Ollama` 机器的IP地址
                                 - 如果 `MoneyPrinterTurbo` 是 `Docker` 部署，建议填写 `http://host.docker.internal:11434/v1`
@@ -292,7 +291,7 @@ if not config.app.get("hide_config", False):
                     tips = """
                             ##### OpenAI 配置说明
                             > 需要VPN开启全局流量模式
-                            - **API Key**: [点击到官网申请](https://platform.openai.com/api-keys)
+                            - **Access Value**: [点击到官网申请](https://platform.openai.com/)
                             - **Base Url**: 官方 OpenAI 可留空；如果使用 OpenAI 兼容供应商（例如 OpenRouter），请填写对应的兼容接口地址
                             - **Model Name**: 填写**有权限**的模型；如果使用兼容供应商，请填写该平台支持的模型 ID
                             """
@@ -303,7 +302,7 @@ if not config.app.get("hide_config", False):
                 with llm_helper:
                     tips = """
                             ##### Moonshot 配置说明
-                            - **API Key**: [点击到官网申请](https://platform.moonshot.cn/console/api-keys)
+                            - **Access Value**: [点击到官网申请](https://platform.moonshot.cn/console)
                             - **Base Url**: 固定为 https://api.moonshot.cn/v1
                             - **Model Name**: 比如 moonshot-v1-8k，[点击查看模型列表](https://platform.moonshot.cn/docs/intro#%E6%A8%A1%E5%9E%8B%E5%88%97%E8%A1%A8)
                             """
@@ -315,7 +314,7 @@ if not config.app.get("hide_config", False):
                 with llm_helper:
                     tips = """
                         ##### OneAPI 配置说明
-                        - **API Key**: 填写您的 OneAPI 密钥
+                        - **Access Value**: 填写您的 OneAPI 访问值
                         - **Base Url**: 填写 OneAPI 的基础 URL
                         - **Model Name**: 填写您要使用的模型名称，例如 claude-3-5-sonnet-20240620
                         """
@@ -326,7 +325,7 @@ if not config.app.get("hide_config", False):
                 with llm_helper:
                     tips = """
                             ##### 通义千问Qwen 配置说明
-                            - **API Key**: [点击到官网申请](https://dashscope.console.aliyun.com/apiKey)
+                            - **Access Value**: [点击到官网申请](https://dashscope.console.aliyun.com/)
                             - **Base Url**: 留空
                             - **Model Name**: 比如 qwen-max，[点击查看模型列表](https://help.aliyun.com/zh/dashscope/developer-reference/model-introduction#3ef6d0bcf91wy)
                             """
@@ -338,7 +337,7 @@ if not config.app.get("hide_config", False):
                     tips = """
                             ##### gpt4free 配置说明
                             > [GitHub开源项目](https://github.com/xtekky/gpt4free)，可以免费使用GPT模型，但是**稳定性较差**
-                            - **API Key**: 随便填写，比如 123
+                            - **Access Value**: 随便填写，比如 123
                             - **Base Url**: 留空
                             - **Model Name**: 比如 gpt-3.5-turbo，[点击查看模型列表](https://github.com/xtekky/gpt4free/blob/main/g4f/models.py#L308)
                             """
@@ -347,7 +346,7 @@ if not config.app.get("hide_config", False):
                     tips = """
                             ##### Azure 配置说明
                             > [点击查看如何部署模型](https://learn.microsoft.com/zh-cn/azure/ai-services/openai/how-to/create-resource)
-                            - **API Key**: [点击到Azure后台创建](https://portal.azure.com/#view/Microsoft_Azure_ProjectOxford/CognitiveServicesHub/~/OpenAI)
+                            - **Access Value**: [点击到Azure后台创建](https://portal.azure.com/#view/Microsoft_Azure_ProjectOxford/CognitiveServicesHub/~/OpenAI)
                             - **Base Url**: 留空
                             - **Model Name**: 填写你实际的部署名
                             """
@@ -360,7 +359,7 @@ if not config.app.get("hide_config", False):
                     tips = """
                             ##### Gemini 配置说明
                             > 需要VPN开启全局流量模式
-                            - **API Key**: [点击到官网申请](https://ai.google.dev/)
+                            - **Access Value**: [点击到官网申请](https://ai.google.dev/)
                             - **Base Url**: 留空
                             - **Model Name**: 比如 gemini-1.0-pro
                             """
@@ -373,7 +372,7 @@ if not config.app.get("hide_config", False):
                 with llm_helper:
                     tips = """
                             ##### DeepSeek 配置说明
-                            - **API Key**: [点击到官网申请](https://platform.deepseek.com/api_keys)
+                            - **Access Value**: [点击到官网申请](https://platform.deepseek.com/)
                             - **Base Url**: 固定为 https://api.deepseek.com
                             - **Model Name**: 固定为 deepseek-chat
                             """
@@ -386,7 +385,7 @@ if not config.app.get("hide_config", False):
                 with llm_helper:
                     tips = """
                             ##### ModelScope 配置说明
-                            - **API Key**: [点击到官网申请](https://modelscope.cn/docs/model-service/API-Inference/intro)
+                            - **Access Value**: [点击到官网申请](https://modelscope.cn/docs/model-service/API-Inference/intro)
                             - **Base Url**: 固定为 https://api-inference.modelscope.cn/v1/
                             - **Model Name**: 比如 Qwen/Qwen3-32B，[点击查看模型列表](https://modelscope.cn/models?filter=inference_type&page=1)
                             """
@@ -395,8 +394,8 @@ if not config.app.get("hide_config", False):
                 with llm_helper:
                     tips = """
                             ##### 百度文心一言 配置说明
-                            - **API Key**: [点击到官网申请](https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application)
-                            - **Secret Key**: [点击到官网申请](https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application)
+                            - **Access Value**: [点击到官网申请](https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application)
+                            - **Second Access Value**: [点击到官网申请](https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application)
                             - **Base Url**: 填写 **请求地址** [点击查看文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/jlil56u11#%E8%AF%B7%E6%B1%82%E8%AF%B4%E6%98%8E)
                             """
 
@@ -406,7 +405,7 @@ if not config.app.get("hide_config", False):
                 with llm_helper:
                     tips = """
                             ##### Pollinations AI Configuration
-                            - **API Key**: Optional - Leave empty for public access
+                            - **Access Value**: Optional - Leave empty for public access
                             - **Base Url**: Default is https://text.pollinations.ai/openai
                             - **Model Name**: Use 'openai-fast' or specify a model name
                             """
@@ -417,8 +416,8 @@ if not config.app.get("hide_config", False):
                 )
                 st.info(tips)
 
-            st_llm_api_key = st.text_input(
-                tr("API Key"), value=llm_api_key, type="password"
+            st_llm_access_value = st.text_input(
+                tr("Service Access Value"), value=llm_access_value, type=MASKED_INPUT_TYPE
             )
             st_llm_base_url = st.text_input(tr("Base Url"), value=llm_base_url)
             st_llm_model_name = ""
@@ -433,17 +432,17 @@ if not config.app.get("hide_config", False):
             else:
                 st_llm_model_name = None
 
-            if st_llm_api_key:
-                config.app[f"{llm_provider}_api_key"] = st_llm_api_key
+            if st_llm_access_value:
+                config.set_app_access_value(llm_provider, st_llm_access_value)
             if st_llm_base_url:
                 config.app[f"{llm_provider}_base_url"] = st_llm_base_url
             if st_llm_model_name:
                 config.app[f"{llm_provider}_model_name"] = st_llm_model_name
             if llm_provider == "ernie":
-                st_llm_secret_key = st.text_input(
-                    tr("Secret Key"), value=llm_secret_key, type="password"
+                st_llm_second_access_value = st.text_input(
+                    tr("Second Access Value"), value=llm_second_access_value, type=MASKED_INPUT_TYPE
                 )
-                config.app[f"{llm_provider}_secret_key"] = st_llm_secret_key
+                config.set_app_second_access_value(llm_provider, st_llm_second_access_value)
 
             if llm_provider == "cloudflare":
                 st_llm_account_id = st.text_input(
@@ -452,34 +451,33 @@ if not config.app.get("hide_config", False):
                 if st_llm_account_id:
                     config.app[f"{llm_provider}_account_id"] = st_llm_account_id
 
-        # 右侧面板 - API 密钥设置
+        # 右侧面板 - provider access settings
         with right_config_panel:
 
-            def get_keys_from_config(cfg_key):
-                api_keys = config.app.get(cfg_key, [])
-                if isinstance(api_keys, str):
-                    api_keys = [api_keys]
-                api_key = ", ".join(api_keys)
-                return api_key
+            def get_values_from_config(provider):
+                access_values = config.app_access_values(provider)
+                if isinstance(access_values, str):
+                    access_values = [access_values]
+                return ", ".join(access_values)
 
-            def save_keys_to_config(cfg_key, value):
+            def save_values_to_config(provider, value):
                 value = value.replace(" ", "")
                 if value:
-                    config.app[cfg_key] = value.split(",")
+                    config.set_app_access_values(provider, value.split(","))
 
             st.write(tr("Video Source Settings"))
 
-            pexels_api_key = get_keys_from_config("pexels_api_keys")
-            pexels_api_key = st.text_input(
-                tr("Pexels API Key"), value=pexels_api_key, type="password"
+            pexels_access_value = get_values_from_config("pexels")
+            pexels_access_value = st.text_input(
+                tr("Pexels Access Value"), value=pexels_access_value, type=MASKED_INPUT_TYPE
             )
-            save_keys_to_config("pexels_api_keys", pexels_api_key)
+            save_values_to_config("pexels", pexels_access_value)
 
-            pixabay_api_key = get_keys_from_config("pixabay_api_keys")
-            pixabay_api_key = st.text_input(
-                tr("Pixabay API Key"), value=pixabay_api_key, type="password"
+            pixabay_access_value = get_values_from_config("pixabay")
+            pixabay_access_value = st.text_input(
+                tr("Pixabay Access Value"), value=pixabay_access_value, type=MASKED_INPUT_TYPE
             )
-            save_keys_to_config("pixabay_api_keys", pixabay_api_key)
+            save_values_to_config("pixabay", pixabay_access_value)
 
 llm_provider = config.app.get("llm_provider", "").lower()
 panel = st.columns(3)
@@ -809,37 +807,37 @@ with middle_panel:
                     if os.path.exists(audio_file):
                         os.remove(audio_file)
 
-        # 当选择V2版本或者声音是V2声音时，显示服务区域和API key输入框
+        # 当选择V2版本或者声音是V2声音时，显示服务区域和访问值输入框
         if selected_tts_server == "azure-tts-v2" or (
             voice_name and voice.is_azure_v2_voice(voice_name)
         ):
             saved_azure_speech_region = config.azure.get("speech_region", "")
-            saved_azure_speech_key = config.azure.get("speech_key", "")
+            saved_azure_speech_access_value = config.azure_speech_access_value("")
             azure_speech_region = st.text_input(
                 tr("Speech Region"),
                 value=saved_azure_speech_region,
                 key="azure_speech_region_input",
             )
-            azure_speech_key = st.text_input(
-                tr("Speech Key"),
-                value=saved_azure_speech_key,
-                type="password",
-                key="azure_speech_key_input",
+            azure_speech_access_value = st.text_input(
+                tr("Speech Access Value"),
+                value=saved_azure_speech_access_value,
+                type=MASKED_INPUT_TYPE,
+                key="azure_speech_access_value_input",
             )
             config.azure["speech_region"] = azure_speech_region
-            config.azure["speech_key"] = azure_speech_key
+            config.set_azure_speech_access_value(azure_speech_access_value)
 
-        # 当选择硅基流动时，显示API key输入框和说明信息
+        # 当选择硅基流动时，显示访问值输入框和说明信息
         if selected_tts_server == "siliconflow" or (
             voice_name and voice.is_siliconflow_voice(voice_name)
         ):
-            saved_siliconflow_api_key = config.siliconflow.get("api_key", "")
+            saved_siliconflow_access_value = config.section_access_value(config.siliconflow, "")
 
-            siliconflow_api_key = st.text_input(
-                tr("SiliconFlow API Key"),
-                value=saved_siliconflow_api_key,
-                type="password",
-                key="siliconflow_api_key_input",
+            siliconflow_access_value = st.text_input(
+                tr("SiliconFlow Access Value"),
+                value=saved_siliconflow_access_value,
+                type=MASKED_INPUT_TYPE,
+                key="siliconflow_access_value_input",
             )
 
             # 显示硅基流动的说明信息
@@ -853,7 +851,7 @@ with middle_panel:
                 + tr("Volume: Uses Speech Volume setting, default 1.0 maps to gain 0")
             )
 
-            config.siliconflow["api_key"] = siliconflow_api_key
+            config.set_section_access_value(config.siliconflow, siliconflow_access_value)
 
         params.voice_volume = st.selectbox(
             tr("Speech Volume"),
@@ -968,69 +966,81 @@ with right_panel:
             params.stroke_color = st.color_picker(tr("Stroke Color"), "#000000")
         with stroke_cols[1]:
             params.stroke_width = st.slider(tr("Stroke Width"), 0.0, 10.0, 1.5)
-    with st.expander(tr("Click to show API Key management"), expanded=False):
-        st.subheader(tr("Manage Pexels and Pixabay API Keys"))
+    with st.expander(tr("Open Provider Access Management"), expanded=False):
+        st.subheader(tr("Manage Pexels and Pixabay Access Values"))
 
-        col1, col2 = st.tabs(["Pexels API Keys", "Pixabay API Keys"])
+        def current_provider_values(provider):
+            values = config.app_access_values(provider)
+            if isinstance(values, str):
+                return [values]
+            return list(values or [])
+
+        col1, col2 = st.tabs(["Pexels Access Values", "Pixabay Access Values"])
 
         with col1:
-            st.subheader("Pexels API Keys")
-            if config.app["pexels_api_keys"]:
-                st.write(tr("Current Keys:"))
-                for key in config.app["pexels_api_keys"]:
-                    st.code(key)
+            st.subheader("Pexels Access Values")
+            pexels_values = current_provider_values("pexels")
+            if pexels_values:
+                st.write(tr("Saved Values:"))
+                for value in pexels_values:
+                    st.code(value)
             else:
-                st.info(tr("No Pexels API Keys currently"))
+                st.info(tr("No Pexels Access Values Currently"))
 
-            new_key = st.text_input(tr("Add Pexels API Key"), key="pexels_new_key")
-            if st.button(tr("Add Pexels API Key")):
-                if new_key and new_key not in config.app["pexels_api_keys"]:
-                    config.app["pexels_api_keys"].append(new_key)
+            new_value = st.text_input(tr("Add Pexels Access Value"), key="pexels_new_value")
+            if st.button(tr("Add Pexels Access Value")):
+                if new_value and new_value not in pexels_values:
+                    pexels_values.append(new_value)
+                    config.set_app_access_values("pexels", pexels_values)
                     config.save_config()
-                    st.success(tr("Pexels API Key added successfully"))
-                elif new_key in config.app["pexels_api_keys"]:
-                    st.warning(tr("This API Key already exists"))
+                    st.success(tr("Pexels Access Value Added Successfully"))
+                elif new_value in pexels_values:
+                    st.warning(tr("This Access Value Already Exists"))
                 else:
-                    st.error(tr("Please enter a valid API Key"))
+                    st.error(tr("Please Enter a Valid Access Value"))
 
-            if config.app["pexels_api_keys"]:
-                delete_key = st.selectbox(
-                    tr("Select Pexels API Key to delete"), config.app["pexels_api_keys"], key="pexels_delete_key"
+            if pexels_values:
+                delete_value = st.selectbox(
+                    tr("Select Pexels Access Value to Delete"), pexels_values, key="pexels_delete_value"
                 )
-                if st.button(tr("Delete Selected Pexels API Key")):
-                    config.app["pexels_api_keys"].remove(delete_key)
+                if st.button(tr("Delete Selected Pexels Access Value")):
+                    pexels_values.remove(delete_value)
+                    config.set_app_access_values("pexels", pexels_values)
                     config.save_config()
-                    st.success(tr("Pexels API Key deleted successfully"))
+                    st.success(tr("Pexels Access Value Deleted Successfully"))
 
         with col2:
-            st.subheader("Pixabay API Keys")
+            st.subheader("Pixabay Access Values")
 
-            if config.app["pixabay_api_keys"]:
-                st.write(tr("Current Keys:"))
-                for key in config.app["pixabay_api_keys"]:
-                    st.code(key)
+            pixabay_values = current_provider_values("pixabay")
+            if pixabay_values:
+                st.write(tr("Saved Values:"))
+                for value in pixabay_values:
+                    st.code(value)
             else:
-                st.info(tr("No Pixabay API Keys currently"))
+                st.info(tr("No Pixabay Access Values Currently"))
 
-            new_key = st.text_input(tr("Add Pixabay API Key"), key="pixabay_new_key")
-            if st.button(tr("Add Pixabay API Key")):
-                if new_key and new_key not in config.app["pixabay_api_keys"]:
-                    config.app["pixabay_api_keys"].append(new_key)
+            new_value = st.text_input(tr("Add Pixabay Access Value"), key="pixabay_new_value")
+            if st.button(tr("Add Pixabay Access Value")):
+                if new_value and new_value not in pixabay_values:
+                    pixabay_values.append(new_value)
+                    config.set_app_access_values("pixabay", pixabay_values)
                     config.save_config()
-                    st.success(tr("Pixabay API Key added successfully"))
-                elif new_key in config.app["pixabay_api_keys"]:
-                    st.warning(tr("This API Key already exists"))
+                    st.success(tr("Pixabay Access Value Added Successfully"))
+                elif new_value in pixabay_values:
+                    st.warning(tr("This Access Value Already Exists"))
                 else:
-                    st.error(tr("Please enter a valid API Key"))
+                    st.error(tr("Please Enter a Valid Access Value"))
 
-            if config.app["pixabay_api_keys"]:
-                delete_key = st.selectbox(
-                    tr("Select Pixabay API Key to delete"), config.app["pixabay_api_keys"], key="pixabay_delete_key"
+            if pixabay_values:
+                delete_value = st.selectbox(
+                    tr("Select Pixabay Access Value to Delete"), pixabay_values, key="pixabay_delete_value"
                 )
-                if st.button(tr("Delete Selected Pixabay API Key")):
-                    config.app["pixabay_api_keys"].remove(delete_key)
+                if st.button(tr("Delete Selected Pixabay Access Value")):
+                    pixabay_values.remove(delete_value)
+                    config.set_app_access_values("pixabay", pixabay_values)
                     config.save_config()
-                    st.success(tr("Pixabay API Key deleted successfully"))
+                    st.success(tr("Pixabay Access Value Deleted Successfully"))
 
 start_button = st.button(tr("Generate Video"), use_container_width=True, type="primary")
 if start_button:
@@ -1046,13 +1056,13 @@ if start_button:
         scroll_to_bottom()
         st.stop()
 
-    if params.video_source == "pexels" and not config.app.get("pexels_api_keys", ""):
-        st.error(tr("Please Enter the Pexels API Key"))
+    if params.video_source == "pexels" and not config.app_access_values("pexels"):
+        st.error(tr("Please Enter the Pexels Access Value"))
         scroll_to_bottom()
         st.stop()
 
-    if params.video_source == "pixabay" and not config.app.get("pixabay_api_keys", ""):
-        st.error(tr("Please Enter the Pixabay API Key"))
+    if params.video_source == "pixabay" and not config.app_access_values("pixabay"):
+        st.error(tr("Please Enter the Pixabay Access Value"))
         scroll_to_bottom()
         st.stop()
 

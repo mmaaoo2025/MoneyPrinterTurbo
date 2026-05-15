@@ -101,7 +101,7 @@ materials, video subtitles, and video background music before synthesizing a hig
 ### Recommended Paths
 
 - Windows users: use the one-click package first for the fastest local trial
-- MacOS / Linux users: use `uv sync --frozen` for the primary local setup path
+- MacOS / Linux users: use `bash setup_env.sh` for the primary local setup path
 - If you want a more isolated runtime: use Docker deployment
 
 ### Run in Google Colab 
@@ -137,8 +137,8 @@ git clone https://github.com/harry0703/MoneyPrinterTurbo.git
 #### ② Modify the Configuration File
 
 - Copy the `config.example.toml` file and rename it to `config.toml`
-- Follow the instructions in the `config.toml` file to configure `pexels_api_keys` and `llm_provider`, and according to
-  the llm_provider's service provider, set up the corresponding API Key
+- Follow the instructions in the `config.toml` file to configure `pexels_access_values` and `llm_provider`, and according to
+  the llm_provider's service provider, set up the corresponding access value
 
 ### Docker Deployment 🐳
 
@@ -169,27 +169,24 @@ Open your browser and visit http://0.0.0.0:8080/docs Or http://0.0.0.0:8080/redo
 
 #### ① Create a Python Virtual Environment
 
-It is recommended to use [uv](https://docs.astral.sh/uv/) to manage the Python environment and dependencies, with Python `3.11` as the default runtime.
+Use the setup script to create a local Python environment outside this project folder, with Python `3.11` as the default runtime.
 
 ```shell
 git clone https://github.com/harry0703/MoneyPrinterTurbo.git
 cd MoneyPrinterTurbo
-uv python install 3.11
-uv sync --frozen
+bash setup_env.sh
 ```
 
-If you are not using `uv` yet, you can still use `venv + pip`.
+On Windows, run the PowerShell setup script from the project folder.
 
-```shell
-python3.11 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+```powershell
+.\setup_env.ps1
 ```
 
 Notes:
-- `pyproject.toml` is now the primary dependency manifest.
-- `uv.lock` pins the resolved environment, so `uv sync --frozen` is recommended by default.
-- `requirements.txt` is kept only for legacy `pip`-based installation.
+- `requirements.txt` is the dependency list used by the setup scripts.
+- The runtime environment is created outside the OneDrive project folder.
+- Private config is created outside the OneDrive project folder.
 
 #### ② Install ImageMagick
 
@@ -224,7 +221,7 @@ Note that you need to execute the following commands in the `root directory` of 
 ###### Windows
 
 ```shell
-uv run streamlit run ./webui/Main.py --browser.gatherUsageStats=False
+webui.bat
 ```
 
 If you have already activated the virtual environment manually, you can still run:
@@ -236,7 +233,7 @@ webui.bat
 ###### MacOS or Linux
 
 ```shell
-uv run streamlit run ./webui/Main.py --browser.gatherUsageStats=False
+sh webui.sh
 ```
 
 If you have already activated the virtual environment manually, you can still run:
@@ -250,7 +247,7 @@ After launching, the browser will open automatically
 #### ④ Launch the API Service 🚀
 
 ```shell
-uv run python main.py
+python main.py
 ```
 
 If you have already activated the virtual environment manually, you can still run:
@@ -287,7 +284,7 @@ online for a quick experience.
 
 A list of all supported voices can be viewed here: [Voice List](./docs/voice-list.txt)
 
-2024-04-16 v1.1.2 Added 9 new Azure voice synthesis voices that require API KEY configuration. These voices sound more realistic.
+2024-04-16 v1.1.2 Added 9 new Azure voice synthesis voices that require access value configuration. These voices sound more realistic.
 
 ## Subtitle Generation 📜
 
@@ -325,7 +322,7 @@ MoneyPrinterTurbo
   │          config.json
   │          model.bin
   │          preprocessor_config.json
-  │          tokenizer.json
+  │          vocabulary file
   │          vocabulary.json
 ```
 

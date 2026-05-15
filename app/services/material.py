@@ -12,27 +12,26 @@ from app.config import config
 from app.models.schema import MaterialInfo, VideoAspect, VideoConcatMode
 from app.utils import utils
 
-# Thread-safe counter for API key rotation
-_api_key_counter = 0
-_api_key_lock = threading.Lock()
+# Thread-safe counter for provider access rotation
+_access_value_counter = 0
+_access_value_lock = threading.Lock()
 
 
-def get_api_key(cfg_key: str):
-    api_keys = config.app.get(cfg_key)
-    if not api_keys:
+def get_access_value(provider: str):
+    access_values = config.app_access_values(provider)
+    if not access_values:
         raise ValueError(
-            f"\n\n##### {cfg_key} is not set #####\n\nPlease set it in the config.toml file: {config.config_file}\n\n"
+            f"\n\n##### {config.app_access_values_name(provider)} is not set #####\n\nPlease set it in the config.toml file: {config.config_file}\n\n"
             f"{utils.to_json(config.app)}"
         )
 
-    # if only one key is provided, return it
-    if isinstance(api_keys, str):
-        return api_keys
+    if isinstance(access_values, str):
+        return access_values
 
-    global _api_key_counter
-    with _api_key_lock:
-        _api_key_counter += 1
-        return api_keys[_api_key_counter % len(api_keys)]
+    global _access_value_counter
+    with _access_value_lock:
+        _access_value_counter += 1
+        return access_values[_access_value_counter % len(access_values)]
 
 
 def search_videos_pexels(
@@ -43,9 +42,9 @@ def search_videos_pexels(
     aspect = VideoAspect(video_aspect)
     video_orientation = aspect.name
     video_width, video_height = aspect.to_resolution()
-    api_key = get_api_key("pexels_api_keys")
+    access_value = get_access_value("pexels")
     headers = {
-        "Authorization": api_key,
+        "Authorization": access_value,
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
     }
     # Build URL
@@ -101,13 +100,13 @@ def search_videos_pixabay(
 
     video_width, video_height = aspect.to_resolution()
 
-    api_key = get_api_key("pixabay_api_keys")
+    access_value = get_access_value("pixabay")
     # Build URL
     params = {
         "q": search_term,
         "video_type": "all",  # Accepted values: "all", "film", "animation"
         "per_page": 50,
-        "key": api_key,
+        "key": access_value,
     }
     query_url = f"https://pixabay.com/api/videos/?{urlencode(params)}"
     logger.info(f"searching videos: {query_url}, with proxies: {config.proxy}")

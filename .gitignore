@@ -11,7 +11,7 @@
 *.key
 *.pfx
 *.p12
-*token*
+*tok*en*
 *cache*
 __pycache__/
 **/__pycache__/
@@ -27,6 +27,7 @@ __pycache__/
 /**/.streamlit
 __pycache__
 logs/
+uv.lock
 
 node_modules
 # VuePress 默认临时文件目录

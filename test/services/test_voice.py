@@ -43,6 +43,9 @@ class TestVoiceService(unittest.TestCase):
         self.loop.close()
     
     def test_siliconflow(self):
+        if not vs.config.section_access_value(vs.config.siliconflow, ""):
+            self.skipTest("SiliconFlow access value is not configured")
+
         voice_name = "siliconflow:FunAudioLLM/CosyVoice2-0.5B:alex-Male"
         voice_name = vs.parse_voice_name(voice_name)
         
@@ -204,7 +207,11 @@ class TestVoiceService(unittest.TestCase):
 
         with patch("google.generativeai.configure"), patch(
             "google.generativeai.GenerativeModel", _FakeModel
-        ), patch.object(vs.config, "app", dict(vs.config.app, gemini_api_key="test-key")):
+        ), patch.object(
+            vs.config,
+            "app",
+            dict(vs.config.app, **{vs.config.app_access_name("gemini"): "test-value"}),
+        ):
             sub_maker = vs.gemini_tts(
                 text=text,
                 voice_name="Zephyr",

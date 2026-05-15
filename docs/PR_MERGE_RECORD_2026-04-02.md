@@ -115,6 +115,6 @@
 
 ## 当前仍需关注的风险
 
-- `#843` 仅做了 mock 验证，尚未使用真实 Upload-Post 密钥联调
+- `#843` 仅做了 mock 验证，尚未使用真实 Upload-Post 访问值联调
 - `#848` 仅验证了 Docker GPU 配置解析，尚未在真实 GPU 环境运行
 - 当前 API 默认 `video_transition_mode=null` 时，完整视频任务仍存在回归风险

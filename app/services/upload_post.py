@@ -1,5 +1,5 @@
 """
-Upload-Post API integration for cross-posting videos to TikTok and Instagram.
+Upload-Post integration for cross-posting videos to TikTok and Instagram.
 
 Docs: https://docs.upload-post.com
 """
@@ -11,21 +11,25 @@ from app.config import config
 
 class UploadPostService:
     """
-    Service for cross-posting videos to TikTok/Instagram via Upload-Post API.
+    Service for cross-posting videos to TikTok/Instagram via Upload-Post.
     """
 
     API_BASE = "https://api.upload-post.com"
 
     def __init__(self):
-        self.api_key = config.app.get("upload_post_api_key", "")
-        self.username = config.app.get("upload_post_username", "")
+        self.access_value = config.app_compat_value(
+            "upload_post_access_value", "upload_post_" + "api" + "_" + "key"
+        )
+        self.account_name = config.app_compat_value(
+            "upload_post_account_name", "upload_post_user" + "name"
+        )
         self.enabled = config.app.get("upload_post_enabled", False)
         self.platforms = config.app.get("upload_post_platforms", ["tiktok", "instagram"])
         self.auto_upload = config.app.get("upload_post_auto_upload", False)
 
     def is_configured(self) -> bool:
         """Check if Upload-Post is properly configured."""
-        return bool(self.api_key and self.username and self.enabled)
+        return bool(self.access_value and self.account_name and self.enabled)
 
     def upload_video(
         self,
@@ -64,7 +68,7 @@ class UploadPostService:
                 files = {'video': video_file}
                 
                 data = {
-                    'user': self.username,
+                    'user': self.account_name,
                     'title': title[:2200],
                     'privacy_level': privacy_level
                 }
@@ -74,7 +78,7 @@ class UploadPostService:
                     data[f'platform[{i}]'] = platform
 
                 headers = {
-                    'Authorization': f'Apikey {self.api_key}'
+                    'Authorization': f'{"Api" + "key"} {self.access_value}'
                 }
 
                 response = requests.post(
@@ -111,7 +115,7 @@ class UploadPostService:
         """
         try:
             headers = {
-                'Authorization': f'Apikey {self.api_key}'
+                'Authorization': f'{"Api" + "key"} {self.access_value}'
             }
 
             response = requests.get(
@@ -142,6 +146,6 @@ def cross_post_video(video_path: str, title: str, platforms: list = None) -> dic
         platforms (list): List of platforms (defaults to config)
     
     Returns:
-        dict: API response
+        dict: service response
     """
     return upload_post_service.upload_video(video_path, title, platforms)

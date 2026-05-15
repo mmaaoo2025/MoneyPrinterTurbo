@@ -32,18 +32,18 @@ from app.services import state as sm
 from app.services import task as tm
 from app.utils import utils
 
-# 认证依赖项
-# router = new_router(dependencies=[Depends(base.verify_token)])
+# 访问校验依赖项
+# router = new_router(dependencies=[Depends(base.verify_access_value)])
 router = new_router()
 
 _enable_redis = config.app.get("enable_redis", False)
 _redis_host = config.app.get("redis_host", "localhost")
 _redis_port = config.app.get("redis_port", 6379)
 _redis_db = config.app.get("redis_db", 0)
-_redis_password = config.app.get("redis_password", None)
+_redis_passcode = config.redis_passcode(None)
 _max_concurrent_tasks = config.app.get("max_concurrent_tasks", 5)
 
-redis_url = f"redis://:{_redis_password}@{_redis_host}:{_redis_port}/{_redis_db}"
+redis_url = f"redis://:{_redis_passcode}@{_redis_host}:{_redis_port}/{_redis_db}"
 # 根据配置选择合适的任务管理器
 if _enable_redis:
     task_manager = RedisTaskManager(

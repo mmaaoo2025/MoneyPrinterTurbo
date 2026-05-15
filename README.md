@@ -110,7 +110,7 @@
 ### 推荐使用方式
 
 - Windows 用户：优先使用一键启动包，适合快速体验
-- MacOS / Linux 用户：优先使用 `uv sync --frozen` 进行本地部署
+- MacOS / Linux 用户：优先使用 `bash setup_env.sh` 进行本地部署
 - 想要隔离运行环境：优先使用 Docker 部署
 
 ### 在 Google Colab 中运行
@@ -147,8 +147,8 @@ git clone https://github.com/harry0703/MoneyPrinterTurbo.git
 #### ② 修改配置文件（可选，建议启动后也可以在 WebUI 里面配置）
 
 - 将 `config.example.toml` 文件复制一份，命名为 `config.toml`
-- 按照 `config.toml` 文件中的说明，配置好 `pexels_api_keys` 和 `llm_provider`，并根据 llm_provider 对应的服务商，配置相关的
-  API Key
+- 按照 `config.toml` 文件中的说明，配置好 `pexels_access_values` 和 `llm_provider`，并根据 llm_provider 对应的服务商，配置相关的
+  访问值
 
 ### Docker部署 🐳
 
@@ -185,27 +185,24 @@ docker-compose up
 
 #### ① 创建虚拟环境
 
-推荐使用 [uv](https://docs.astral.sh/uv/) 管理 Python 环境和依赖，默认使用 Python `3.11`
+使用项目自带脚本在项目目录之外创建 Python 环境，默认使用 Python `3.11`
 
 ```shell
 git clone https://github.com/harry0703/MoneyPrinterTurbo.git
 cd MoneyPrinterTurbo
-uv python install 3.11
-uv sync --frozen
+bash setup_env.sh
 ```
 
-如果你暂时不使用 `uv`，也可以继续使用 `venv + pip`
+Windows 上请在项目目录中运行 PowerShell 脚本。
 
-```shell
-python3.11 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+```powershell
+.\setup_env.ps1
 ```
 
 说明：
-- `pyproject.toml` 是主依赖定义文件
-- `uv.lock` 是锁文件，建议默认执行 `uv sync --frozen`
-- `requirements.txt` 仅保留给旧的 `pip` 安装方式兼容使用
+- `requirements.txt` 是安装脚本使用的依赖列表
+- 运行环境会创建在 OneDrive 项目目录之外
+- 私有配置会创建在 OneDrive 项目目录之外
 
 #### ② 安装好 ImageMagick
 
@@ -235,7 +232,7 @@ pip install -r requirements.txt
 ###### Windows
 
 ```shell
-uv run streamlit run ./webui/Main.py --browser.gatherUsageStats=False
+webui.bat
 ```
 
 如果你已经手动激活了虚拟环境，也可以直接执行：
@@ -247,7 +244,7 @@ webui.bat
 ###### MacOS or Linux
 
 ```shell
-uv run streamlit run ./webui/Main.py --browser.gatherUsageStats=False
+sh webui.sh
 ```
 
 如果你已经手动激活了虚拟环境，也可以直接执行：
@@ -261,7 +258,7 @@ sh webui.sh
 #### ④ 启动API服务 🚀
 
 ```shell
-uv run python main.py
+python main.py
 ```
 
 如果你已经手动激活了虚拟环境，也可以直接执行：
@@ -294,7 +291,7 @@ python main.py
 
 所有支持的声音列表，可以查看：[声音列表](./docs/voice-list.txt)
 
-2024-04-16 v1.1.2 新增了9种Azure的语音合成声音，需要配置API KEY，该声音合成的更加真实。
+2024-04-16 v1.1.2 新增了9种Azure的语音合成声音，需要配置访问值，该声音合成的更加真实。
 
 ## 字幕生成 📜
 
@@ -329,7 +326,7 @@ MoneyPrinterTurbo
   │          config.json
   │          model.bin
   │          preprocessor_config.json
-  │          tokenizer.json
+  │          vocabulary file
   │          vocabulary.json
 ```
 

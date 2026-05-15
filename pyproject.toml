@@ -1,6 +1,6 @@
 # 说明：
 # 1. 主依赖来源统一收敛到 pyproject.toml。
-# 2. 运行环境通过 uv.lock 固定，避免不同机器解析出不同版本组合。
+# 2. Mao 的本地安装脚本使用 requirements.txt，并把运行环境放在 OneDrive 之外。
 [build-system]
 requires = ["hatchling>=1.27.0"]
 build-backend = "hatchling.build"

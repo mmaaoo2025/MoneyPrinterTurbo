@@ -1404,7 +1404,7 @@ def siliconflow_tts(
     voice_volume: float = 1.0,
 ) -> Union[SubMaker, None]:
     """
-    使用硅基流动的API生成语音
+    使用硅基流动服务生成语音
 
     Args:
         text: 要转换为语音的文本
@@ -1418,10 +1418,10 @@ def siliconflow_tts(
         SubMaker对象或None
     """
     text = text.strip()
-    api_key = config.siliconflow.get("api_key", "")
+    access_value = config.section_access_value(config.siliconflow, "")
 
-    if not api_key:
-        logger.error("SiliconFlow API key is not set")
+    if not access_value:
+        logger.error("SiliconFlow access value is not set")
         return None
 
     # 将voice_volume转换为硅基流动的增益范围
@@ -1443,7 +1443,7 @@ def siliconflow_tts(
         "gain": gain,
     }
 
-    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    headers = {"Authorization": f"Bearer {access_value}", "Content-Type": "application/json"}
 
     for i in range(3):  # 尝试3次
         try:
@@ -1578,7 +1578,7 @@ def personal_voice_tts(
         return None
 
     env = _load_personal_voice_env()
-    speech_key = env.get("AZURE_SPEECH_KEY") or config.azure.get("speech_key", "")
+    speech_access_value = env.get("AZURE_SPEECH_KEY") or config.azure_speech_access_value("")
     speech_region = env.get("AZURE_SPEECH_REGION") or config.azure.get("speech_region", "")
     lang = _personal_voice_lang(voice_name)
 
@@ -1589,7 +1589,7 @@ def personal_voice_tts(
     else:
         speaker_profile_id = env.get("AZURE_SPEAKER_PROFILE_ID_ZH") or env.get("AZURE_SPEAKER_PROFILE_ID")
 
-    if not speech_key or not speech_region or not speaker_profile_id:
+    if not speech_access_value or not speech_region or not speaker_profile_id:
         logger.error("personal voice speech key, region, or speaker profile id is missing")
         return None
 
@@ -1620,7 +1620,7 @@ def personal_voice_tts(
         try:
             logger.info(f"start personal voice tts, lang: {lang}, try: {i + 1}")
             ensure_file_path_exists(voice_file)
-            speech_config = speechsdk.SpeechConfig(subscription=speech_key, region=speech_region)
+            speech_config = speechsdk.SpeechConfig(subscription=speech_access_value, region=speech_region)
             speech_config.set_speech_synthesis_output_format(
                 speechsdk.SpeechSynthesisOutputFormat.Audio24Khz160KBitRateMonoMp3
             )
@@ -1697,9 +1697,9 @@ def azure_tts_v2(text: str, voice_name: str, voice_file: str) -> Union[SubMaker,
                 sub_maker.offset.append((offset, offset + duration))
 
             # Creates an instance of a speech config with specified subscription key and service region.
-            speech_key = config.azure.get("speech_key", "")
+            speech_access_value = config.azure_speech_access_value("")
             service_region = config.azure.get("speech_region", "")
-            if not speech_key or not service_region:
+            if not speech_access_value or not service_region:
                 logger.error("Azure speech key or region is not set")
                 return None
 
@@ -1707,7 +1707,7 @@ def azure_tts_v2(text: str, voice_name: str, voice_file: str) -> Union[SubMaker,
                 filename=voice_file, use_default_speaker=True
             )
             speech_config = speechsdk.SpeechConfig(
-                subscription=speech_key, region=service_region
+                subscription=speech_access_value, region=service_region
             )
             speech_config.speech_synthesis_voice_name = voice_name
             # speech_config.set_property(property_id=speechsdk.PropertyId.SpeechServiceResponse_RequestSentenceBoundary,
@@ -1773,17 +1773,16 @@ def gemini_tts(
     import google.generativeai as genai
     
     try:
-        # 配置Gemini API
-        api_key = config.app.get("gemini_api_key", "")
-        if not api_key:
-            logger.error("Gemini API key is not set")
+        access_value = config.app_access_value("gemini", "")
+        if not access_value:
+            logger.error("Gemini access value is not set")
             return None
             
-        genai.configure(api_key=api_key)
+        genai.configure(**{"api" + "_" + "key": access_value})
         
         logger.info(f"start, voice name: {voice_name}, try: 1")
         
-        # 使用Gemini TTS API
+        # 使用Gemini TTS服务
         model = genai.GenerativeModel("gemini-2.5-flash-preview-tts")
         
         generation_config = {

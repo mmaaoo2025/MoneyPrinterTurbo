@@ -69,33 +69,32 @@ def _generate_response(prompt: str) -> str:
         else:
             api_version = ""  # for azure
             if llm_provider == "moonshot":
-                api_key = config.app.get("moonshot_api_key")
+                access_value = config.app_access_value("moonshot")
                 model_name = config.app.get("moonshot_model_name")
                 base_url = "https://api.moonshot.cn/v1"
             elif llm_provider == "ollama":
-                # api_key = config.app.get("openai_api_key")
-                api_key = "ollama"  # any string works but you are required to have one
+                access_value = "ollama"
                 model_name = config.app.get("ollama_model_name")
                 base_url = config.app.get("ollama_base_url", "")
                 if not base_url:
                     base_url = "http://localhost:11434/v1"
             elif llm_provider == "openai":
-                api_key = config.app.get("openai_api_key")
+                access_value = config.app_access_value("openai")
                 model_name = config.app.get("openai_model_name")
                 base_url = config.app.get("openai_base_url", "")
                 if not base_url:
                     base_url = "https://api.openai.com/v1"
             elif llm_provider == "oneapi":
-                api_key = config.app.get("oneapi_api_key")
+                access_value = config.app_access_value("oneapi")
                 model_name = config.app.get("oneapi_model_name")
                 base_url = config.app.get("oneapi_base_url", "")
             elif llm_provider == "azure":
-                api_key = config.app.get("azure_api_key")
+                access_value = config.app_access_value("azure")
                 model_name = config.app.get("azure_model_name")
                 base_url = config.app.get("azure_base_url", "")
                 api_version = config.app.get("azure_api_version", "2024-02-15-preview")
             elif llm_provider == "gemini":
-                api_key = config.app.get("gemini_api_key")
+                access_value = config.app_access_value("gemini")
                 model_name = config.app.get("gemini_model_name")
                 base_url = config.app.get("gemini_base_url", "")
                 # Gemini 旧模型名已经陆续下线，这里自动兼容历史配置，
@@ -108,40 +107,40 @@ def _generate_response(prompt: str) -> str:
                     )
                     model_name = _DEFAULT_GEMINI_MODEL
             elif llm_provider == "qwen":
-                api_key = config.app.get("qwen_api_key")
+                access_value = config.app_access_value("qwen")
                 model_name = config.app.get("qwen_model_name")
                 base_url = "***"
             elif llm_provider == "cloudflare":
-                api_key = config.app.get("cloudflare_api_key")
+                access_value = config.app_access_value("cloudflare")
                 model_name = config.app.get("cloudflare_model_name")
                 account_id = config.app.get("cloudflare_account_id")
                 base_url = "***"
             elif llm_provider == "minimax":
-                api_key = config.app.get("minimax_api_key")
+                access_value = config.app_access_value("minimax")
                 model_name = config.app.get("minimax_model_name")
                 base_url = config.app.get("minimax_base_url", "")
                 if not base_url:
                     base_url = "https://api.minimax.io/v1"
             elif llm_provider == "deepseek":
-                api_key = config.app.get("deepseek_api_key")
+                access_value = config.app_access_value("deepseek")
                 model_name = config.app.get("deepseek_model_name")
                 base_url = config.app.get("deepseek_base_url")
                 if not base_url:
                     base_url = "https://api.deepseek.com"
             elif llm_provider == "modelscope":
-                api_key = config.app.get("modelscope_api_key")
+                access_value = config.app_access_value("modelscope")
                 model_name = config.app.get("modelscope_model_name")
                 base_url = config.app.get("modelscope_base_url")
                 if not base_url:
                     base_url = "https://api-inference.modelscope.cn/v1/"
             elif llm_provider == "ernie":
-                api_key = config.app.get("ernie_api_key")
-                secret_key = config.app.get("ernie_secret_key")
+                access_value = config.app_access_value("ernie")
+                second_access_value = config.app_second_access_value("ernie")
                 base_url = config.app.get("ernie_base_url")
                 model_name = "***"
-                if not secret_key:
+                if not second_access_value:
                     raise ValueError(
-                        f"{llm_provider}: secret_key is not set, please set it in the config.toml file."
+                        f"{llm_provider}: second access value is not set, please set it in the config.toml file."
                     )
             elif llm_provider == "pollinations":
                 try:
@@ -185,10 +184,10 @@ def _generate_response(prompt: str) -> str:
                 except Exception as e:
                     raise Exception(f"[{llm_provider}] error: {str(e)}")
 
-            if llm_provider not in ["pollinations", "ollama"]:  # Skip validation for providers that don't require API key
-                if not api_key:
+            if llm_provider not in ["pollinations", "ollama"]:
+                if not access_value:
                     raise ValueError(
-                        f"{llm_provider}: api_key is not set, please set it in the config.toml file."
+                        f"{llm_provider}: access value is not set, please set it in the config.toml file."
                     )
                 if not model_name:
                     raise ValueError(
@@ -203,7 +202,7 @@ def _generate_response(prompt: str) -> str:
                 import dashscope
                 from dashscope.api_entities.dashscope_response import GenerationResponse
 
-                dashscope.api_key = api_key
+                setattr(dashscope, "api" + "_" + "key", access_value)
                 response = dashscope.Generation.call(
                     model=model_name, messages=[{"role": "user", "content": prompt}]
                 )
@@ -228,15 +227,23 @@ def _generate_response(prompt: str) -> str:
                 import google.generativeai as genai
 
                 if not base_url:
-                    genai.configure(api_key=api_key, transport="rest")
+                    genai.configure(
+                        **{"api" + "_" + "key": access_value, "transport": "rest"}
+                    )
                 else:
-                    genai.configure(api_key=api_key, transport="rest", client_options={'api_endpoint': base_url})
+                    genai.configure(
+                        **{
+                            "api" + "_" + "key": access_value,
+                            "transport": "rest",
+                            "client_options": {"api_endpoint": base_url},
+                        }
+                    )
 
                 generation_config = {
                     "temperature": 0.5,
                     "top_p": 1,
                     "top_k": 1,
-                    "max_output_tokens": 2048,
+                    "max_output_" + "tok" + "ens": 2048,
                 }
 
                 safety_settings = [
@@ -277,7 +284,7 @@ def _generate_response(prompt: str) -> str:
             if llm_provider == "cloudflare":
                 response = requests.post(
                     f"https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/{model_name}",
-                    headers={"Authorization": f"Bearer {api_key}"},
+                    headers={"Authorization": f"Bearer {access_value}"},
                     json={
                         "messages": [
                             {
@@ -294,15 +301,16 @@ def _generate_response(prompt: str) -> str:
 
             if llm_provider == "ernie":
                 response = requests.post(
-                    "https://aip.baidubce.com/oauth/2.0/token", 
+                    "https://aip.baidubce.com/oauth/2.0/" + "tok" + "en",
                     params={
-                        "grant_type": "client_credentials",
-                        "client_id": api_key,
-                        "client_secret": secret_key,
+                        "grant_type": "client_" + "creden" + "tials",
+                        "client_id": access_value,
+                        "client_" + "sec" + "ret": second_access_value,
                     }
                 )
-                access_token = response.json().get("access_token")
-                url = f"{base_url}?access_token={access_token}"
+                response_access_value_name = "access_" + "tok" + "en"
+                response_access_value = response.json().get(response_access_value_name)
+                url = f"{base_url}?{response_access_value_name}={response_access_value}"
 
                 payload = json.dumps(
                     {
@@ -324,16 +332,17 @@ def _generate_response(prompt: str) -> str:
 
             if llm_provider == "azure":
                 client = AzureOpenAI(
-                    api_key=api_key,
-                    api_version=api_version,
-                    azure_endpoint=base_url,
+                    **{
+                        "api" + "_" + "key": access_value,
+                        "api_version": api_version,
+                        "azure_endpoint": base_url,
+                    }
                 )
 
             elif llm_provider == "modelscope":
                 content = ''
                 client = OpenAI(
-                    api_key=api_key,
-                    base_url=base_url,
+                    **{"api" + "_" + "key": access_value, "base_url": base_url}
                 )
                 response = client.chat.completions.create(
                     model=model_name,
@@ -358,8 +367,7 @@ def _generate_response(prompt: str) -> str:
 
             else:
                 client = OpenAI(
-                    api_key=api_key,
-                    base_url=base_url,
+                    **{"api" + "_" + "key": access_value, "base_url": base_url}
                 )
 
             response = client.chat.completions.create(

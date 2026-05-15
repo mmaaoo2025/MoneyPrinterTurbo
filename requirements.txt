@@ -1,4 +1,4 @@
-# Keep legacy pip install support; primary deps moved to pyproject.toml / uv.lock.
+# Dependency list used by the local setup scripts.
 moviepy==2.1.2
 streamlit==1.45.0
 edge_tts==7.2.7

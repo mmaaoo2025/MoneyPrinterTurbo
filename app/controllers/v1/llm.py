@@ -10,8 +10,8 @@ from app.models.schema import (
 from app.services import llm
 from app.utils import utils
 
-# authentication dependency
-# router = new_router(dependencies=[Depends(base.verify_token)])
+# access check dependency
+# router = new_router(dependencies=[Depends(base.verify_access_value)])
 router = new_router()
 
 
