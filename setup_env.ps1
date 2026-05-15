@@ -7,20 +7,47 @@ $ErrorActionPreference = "Stop"
 
 $ProjectDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
+# Probe candidate launchers in priority order and pick the first one that
+# actually reports a supported version (>=3.11, <3.13). This keeps the error
+# message clear when `py` exists but a usable interpreter is not installed.
+$Candidates = @()
 if (Get-Command py -ErrorAction SilentlyContinue) {
-    $PythonExe = "py"
-    $PythonArgs = @("-3.11")
-} elseif (Get-Command python -ErrorAction SilentlyContinue) {
-    $PythonExe = "python"
-    $PythonArgs = @()
-} else {
-    throw "Python was not found. Install Python 3.11 first, then rerun this script."
+    $Candidates += , @{ Exe = "py"; Args = @("-3.11") }
+    $Candidates += , @{ Exe = "py"; Args = @("-3.12") }
+}
+if (Get-Command python -ErrorAction SilentlyContinue) {
+    $Candidates += , @{ Exe = "python"; Args = @() }
 }
 
-$Version = & $PythonExe @PythonArgs -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"
-if ($Version -notin @("3.11", "3.12")) {
-    throw "MoneyPrinterTurbo requires Python >=3.11,<3.13. Found $Version."
+$PythonExe = $null
+$PythonArgs = $null
+$Version = $null
+$Tried = @()
+foreach ($cand in $Candidates) {
+    $label = ($cand.Exe + " " + ($cand.Args -join " ")).Trim()
+    $Tried += $label
+    try {
+        $v = & $cand.Exe @($cand.Args) -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>$null
+    } catch {
+        continue
+    }
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($v)) { continue }
+    if ($v -in @("3.11", "3.12")) {
+        $PythonExe = $cand.Exe
+        $PythonArgs = $cand.Args
+        $Version = $v
+        break
+    }
 }
+
+if (-not $PythonExe) {
+    $msg = "MoneyPrinterTurbo requires Python >=3.11,<3.13, but no matching interpreter was found.`n"
+    if ($Tried.Count -gt 0) { $msg += "Tried: " + ($Tried -join ", ") + "`n" }
+    $msg += "Install Python 3.11 (e.g. `winget install Python.Python.3.11`), then rerun this script."
+    throw $msg
+}
+
+Write-Host "Using Python $Version via: $PythonExe $($PythonArgs -join ' ')"
 
 New-Item -ItemType Directory -Force -Path $ConfigDir | Out-Null
 
