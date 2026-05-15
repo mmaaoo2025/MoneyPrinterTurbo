@@ -1,6 +1,21 @@
 .DS_Store
 /config.toml
 /storage/
+
+# Local runtime data and security-sensitive files must stay outside OneDrive
+.env
+.env.*
+*.pem
+*.crt
+*.cer
+*.key
+*.pfx
+*.p12
+*token*
+*cache*
+__pycache__/
+**/__pycache__/
+*.pyc
 /.idea/
 /app/services/__pycache__
 /app/__pycache__/

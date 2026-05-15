@@ -1,0 +1,44 @@
+MoneyPrinterTurbo local setup
+=============================
+
+Do not store runtime environments or private config in this OneDrive project.
+Python virtualenvs include certificate bundles such as cacert.pem, and config.toml
+may contain API keys. Keep those files local per device.
+
+macOS
+-----
+From this project folder, run:
+
+    bash setup_env.sh
+
+This creates:
+
+    ~/.venvs/moneyPrinterTurbo
+    ~/Library/Application Support/moneyPrinterTurbo/config.toml
+
+Activate when needed:
+
+    source "$HOME/.venvs/moneyPrinterTurbo/bin/activate"
+
+Windows
+-------
+From this project folder in PowerShell, run:
+
+    .\setup_env.ps1
+
+This creates:
+
+    %USERPROFILE%\.venvs\moneyPrinterTurbo
+    %LOCALAPPDATA%\moneyPrinterTurbo\config.toml
+
+Activate when needed:
+
+    & "$env:USERPROFILE\.venvs\moneyPrinterTurbo\Scripts\Activate.ps1"
+
+Notes
+-----
+- If an old project-local config.toml exists, the setup script migrates it to
+  the local config folder outside OneDrive.
+- If no local config exists, the setup script creates one from config.example.toml.
+- Do not put real secrets, token caches, virtualenvs, certificates, or private
+  keys back into this OneDrive project folder.

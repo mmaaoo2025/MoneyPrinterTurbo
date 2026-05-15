@@ -5,4 +5,9 @@
 
 # export HF_ENDPOINT=https://hf-mirror.com
 
+VENV_DIR="${MPT_VENV:-$HOME/.venvs/moneyPrinterTurbo}"
+if [ -f "$VENV_DIR/bin/activate" ]; then
+	. "$VENV_DIR/bin/activate"
+fi
+
 streamlit run ./webui/Main.py --browser.serverAddress="0.0.0.0" --server.enableCORS=True --browser.gatherUsageStats=False

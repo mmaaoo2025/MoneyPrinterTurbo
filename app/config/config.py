@@ -1,12 +1,55 @@
 import os
 import shutil
 import socket
+import sys
+from pathlib import Path
 
 import toml
 from loguru import logger
 
 root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-config_file = f"{root_dir}/config.toml"
+
+
+def _local_config_dir() -> Path:
+    override = os.getenv("MPT_CONFIG_DIR")
+    if override:
+        return Path(override).expanduser()
+
+    if os.name == "nt":
+        base = os.getenv("LOCALAPPDATA") or os.getenv("APPDATA")
+        if base:
+            return Path(base) / "moneyPrinterTurbo"
+        return Path.home() / "AppData" / "Local" / "moneyPrinterTurbo"
+
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "moneyPrinterTurbo"
+
+    base = os.getenv("XDG_CONFIG_HOME")
+    if base:
+        return Path(base) / "moneyPrinterTurbo"
+    return Path.home() / ".config" / "moneyPrinterTurbo"
+
+
+def _private_write_permissions(path: Path) -> None:
+    if os.name != "nt":
+        os.chmod(path, 0o600)
+
+
+def _config_file() -> Path:
+    override = os.getenv("MPT_CONFIG_FILE")
+    if override:
+        path = Path(override).expanduser()
+    else:
+        path = _local_config_dir() / "config.toml"
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if os.name != "nt":
+        os.chmod(path.parent, 0o700)
+    return path
+
+
+config_file = str(_config_file())
+legacy_config_file = f"{root_dir}/config.toml"
 
 
 def load_config():
@@ -16,9 +59,14 @@ def load_config():
 
     if not os.path.isfile(config_file):
         example_file = f"{root_dir}/config.example.toml"
-        if os.path.isfile(example_file):
+        if os.path.isfile(legacy_config_file):
+            shutil.copyfile(legacy_config_file, config_file)
+            _private_write_permissions(Path(config_file))
+            logger.info(f"migrate project config.toml to local config: {config_file}")
+        elif os.path.isfile(example_file):
             shutil.copyfile(example_file, config_file)
-            logger.info("copy config.example.toml to config.toml")
+            _private_write_permissions(Path(config_file))
+            logger.info(f"copy config.example.toml to local config: {config_file}")
 
     logger.info(f"load config from file: {config_file}")
 
@@ -40,6 +88,7 @@ def save_config():
         _cfg["siliconflow"] = siliconflow
         _cfg["ui"] = ui
         f.write(toml.dumps(_cfg))
+    _private_write_permissions(Path(config_file))
 
 
 _cfg = load_config()
